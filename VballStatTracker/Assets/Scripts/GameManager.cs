@@ -51,6 +51,26 @@ public class GameManager : MonoBehaviour
         //Convert coords to world space
         Vector2 worldPos = mainCam.ScreenToWorldPoint(contactPos);
 
+        Debug.Log("Ball on left? " + ballOnLeft);
+        Debug.Log("Contact on Left? " + IsContactOnLeft(worldPos));
+
+        //Prevents the user from making the serve and receive on the same side of the net
+        if (isReceive)
+        {
+            if (ballOnLeft)
+            {
+                if (IsContactOnLeft(worldPos))
+                    return;
+            }
+
+            if (!ballOnLeft)
+            {
+                if (!IsContactOnLeft(worldPos))
+                    return;
+            }
+            isReceive = false;
+        }
+
         //Normal course of game after serve
         if (!isServing)
         {
@@ -58,7 +78,7 @@ public class GameManager : MonoBehaviour
             {
                 case true:
                     //If ball changes sides, clear current list of contacts and start over
-                    if (worldPos.x > net.position.x)
+                    if (!IsContactOnLeft(worldPos))
                     {
                         currentContact = 1;
                         for (int i = 0; i < contacts.Count; i++)
@@ -71,7 +91,7 @@ public class GameManager : MonoBehaviour
 
                     break;
                 case false:
-                    if (worldPos.x < net.position.x)
+                    if (IsContactOnLeft(worldPos))
                     {
                         currentContact = 1;
                         for (int i = 0; i < contacts.Count; i++)
@@ -85,29 +105,14 @@ public class GameManager : MonoBehaviour
                     break;
             }
 
-            if (isReceive)
-            {
-                if (ballOnLeft)
-                {
-                    if (Contains(leftCourt, worldPos))
-                        return;
-                }
-
-                if (!ballOnLeft)
-                {
-                    if (Contains(rightCourt, worldPos))
-                        return;
-                }
-            }
-
-                createNewContact(worldPos, isAttack);
+            createNewContact(worldPos, isAttack);//New marker is created
 
             currentContact++;
             return;
         }
         else if(isServing)
         {
-            ballOnLeft = Contains(leftCourt, worldPos);
+            ballOnLeft = IsContactOnLeft(worldPos);//Sets initial side of the net the ball is on
 
             createNewContact(worldPos, isAttack);
 
@@ -117,23 +122,13 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    //Collision detection to see if contact is within a certain area
-    private bool Contains(GameObject side, Vector2 contactPos)
+    //Determines which side of the court the user had tapped
+    private bool IsContactOnLeft(Vector2 contactPos)
     {
-        Vector2 CourtPos = side.transform.position;
-        float width = side.GetComponent<SpriteRenderer>().size.x;
-        float height = side.GetComponent<SpriteRenderer>().size.y;
+        if (contactPos.x < net.position.x)
+            return true;
 
-        if (contactPos.x < CourtPos.x)
-            return false;
-        if (contactPos.y < CourtPos.y)
-            return false;
-        if (contactPos.x > CourtPos.x + width)
-            return false;
-        if (contactPos.y > CourtPos.y + height)
-            return false;
-
-        return true;
+        return false;
     }
 
     //Helper method to set up the new contactMarker with proper values
