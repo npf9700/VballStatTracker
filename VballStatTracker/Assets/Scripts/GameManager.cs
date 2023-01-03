@@ -5,6 +5,7 @@ using UnityEngine;
 public class GameManager : MonoBehaviour
 {
     private Camera mainCam;
+    private ScoreManager scrMgr;
 
     public Transform net;
     public GameObject leftCourt;
@@ -14,16 +15,15 @@ public class GameManager : MonoBehaviour
     private List<ContactMarker> contacts;
     private int currentContact;
 
-    private int leftTeamScore;
-    private int rightTeamScore;
-
     private bool ballOnLeft;
     private bool isServing;
+    private bool isFirstServe;
     private bool isReceive;
 
     private void Awake()
     {
         mainCam = Camera.main;
+        scrMgr = this.GetComponent<ScoreManager>();
     }
 
     // Start is called before the first frame update
@@ -32,11 +32,9 @@ public class GameManager : MonoBehaviour
         contacts = new List<ContactMarker>();
         currentContact = 1;
 
-        leftTeamScore = 0;
-        rightTeamScore = 0;
-
         ballOnLeft = true;
         isServing = true;
+        isFirstServe = true;
         isReceive = false;
     }
 
@@ -105,6 +103,13 @@ public class GameManager : MonoBehaviour
                     break;
             }
 
+            //If 4 contacts, other team gets point
+            if (currentContact >= 4)
+            {
+                PointScored();
+                return;
+            }
+
             createNewContact(worldPos, isAttack);//New marker is created
 
             currentContact++;
@@ -112,7 +117,26 @@ public class GameManager : MonoBehaviour
         }
         else if(isServing)
         {
-            ballOnLeft = IsContactOnLeft(worldPos);//Sets initial side of the net the ball is on
+            //If its the first serve, the user picks which side serves first (SO FAR - This will be changed once the results of the coin toss are implmented)
+            if (isFirstServe)
+            {
+                ballOnLeft = IsContactOnLeft(worldPos);//Sets initial side of the net the ball is on
+                isFirstServe = false;
+            }
+            else//If its not the first serve, the player is limited to the side that made the last point
+            {
+                if (ballOnLeft)
+                {
+                    if (!IsContactOnLeft(worldPos))
+                        return;
+                }
+
+                if (!ballOnLeft)
+                {
+                    if (IsContactOnLeft(worldPos))
+                        return;
+                }
+            }
 
             createNewContact(worldPos, isAttack);
 
@@ -138,5 +162,29 @@ public class GameManager : MonoBehaviour
         newContact.IsAttack = isAttack;
         newContact.ContactNum = currentContact;
         contacts.Add(newContact);
+    }
+
+    private void PointScored()
+    {
+        if (ballOnLeft)
+        {
+            scrMgr.AddToRightTeam();
+            ballOnLeft = false;
+        }
+        else
+        {
+            scrMgr.AddToLeftTeam();
+            ballOnLeft = true;
+        }
+
+        currentContact = 1;
+        isServing = true;
+        isReceive = false;
+
+        for (int i = 0; i < contacts.Count; i++)
+        {
+            Destroy(contacts[i].gameObject);
+        }
+        contacts.Clear();
     }
 }
