@@ -7,7 +7,7 @@ public class ContactMarker : MonoBehaviour
 {
     private Vector2 contactPos;
     private int contactNum;
-    //private Player contacter;
+    private Player contacter;
     private bool isAttack;
 
     private void Start()
@@ -35,10 +35,11 @@ public class ContactMarker : MonoBehaviour
         set { isAttack = value; }
     }
 
-    //public Player GetPlayer()
-    //{
-    //    return contacter;
-    //}
+    public Player Contacter
+    {
+        get { return contacter; }
+        set { contacter = value; }
+    }
 
 
 }
